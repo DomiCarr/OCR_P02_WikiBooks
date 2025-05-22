@@ -1,0 +1,22 @@
+# environnement virtuel
+env/
+
+# fichier généré automatiquement par Mac OS 
+.DS_Store
+
+# fichiers logs
+*.log
+*.tmp 
+
+# caches python
+.mypy_cache/, __pycache__/
+
+# settings de VSCode
+.vscode
+
+#Spécifique projet P02: données et images générées
+input/
+output/
+
+
+
