@@ -8,8 +8,8 @@ from data_cleaner import clean_number
 # Function that opens the CSV file and writes the header row.
 # ---------------------------------------------------------------
 
-def ecrit_entete():
-    en_tete = [
+def write_csv_header():
+    csv_header = [
         "product_page_url",
         "universal_product_code",
         "title",
@@ -24,7 +24,7 @@ def ecrit_entete():
 
     with open("../data/output/wikibooks.csv", "w", newline="") as fichier_csv:
         writer = csv.writer(fichier_csv, delimiter=",")
-        writer.writerow(en_tete)
+        writer.writerow(csv_header)
 
 # ---------------------------------------------------------------
 # Function that writes a book row to the CSV file
@@ -37,54 +37,60 @@ def write_book_line(url_book):
     # url de la page du livre
     product_page_url = url
 
-
     response = requests.get(url)
 
     if response.ok:
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # titre du livre
+        # book title
         title = soup.find('h1').text
 
         # on extrait la table
         table = soup.find('table')
         tds = soup.find_all('td')
 
-        # code upc
+        # upc code
         universal_product_code = tds[0].text
 
-        # prix avec les taxes
+        # price including taxes
         price_including_tax = clean_number(tds[2].text)
 
-        # prix sans les taxes
+        # price excluding taxes
         price_excluding_tax = clean_number(tds[3].text)
 
-        # nombre d'ouvrages disponibles
+        # number of available books
         number_available = clean_number(tds[5].text)
 
         # product_description
-        #div_description = soup.find("div", id="product_description")
-        #product_description = div_description.find_next_sibling("p").text.strip() 
-        product_description = "toto"
-
+        div_description = soup.find('div', id='product_description')
+        product_description = div_description.find_next_sibling('p').text.strip() 
 
         # category
         categ_bloc = soup.find_all('a')
         category = categ_bloc[3].text
 
-
         # rating
         rating_tag = soup.find("p", class_="star-rating")
-        rating = rating_tag.get("class")[1]  
+        rating_text = rating_tag.get("class")[1]  
+        match rating_text:
+            case 'One':
+                rating = 1
+            case 'Two':
+                rating = 2
+            case 'Three':
+                rating = 3
+            case 'Four':
+                rating = 4
+            case 'Five':
+                rating = 5
+            case _:
+                rating = 0  # Valeur par défaut si inconnu
 
         # image url
         bloc_image = soup.find("div", class_="item active").img
         image_url = urljoin(url,bloc_image["src"])
 
-
-
-
-    # ligne du fichier csv
+    # csv book row
     ligne = [
         product_page_url,
         universal_product_code,
@@ -102,8 +108,7 @@ def write_book_line(url_book):
         writer = csv.writer(fichier_csv, delimiter=",")
         writer.writerow(ligne)
 
-
-"""
+    """
     print('product_page_url: ',product_page_url)
     print('universal_product_code: ',universal_product_code)
     print('title: ', title)
@@ -114,14 +119,15 @@ def write_book_line(url_book):
     print('category: ', category)
     print('review_rating: ',rating) 
     print('image url: ',image_url)     
-"""
+    """
+
 
 # ---------------------------------------------------------------
 # Function that retrieves all books from a category
 # and writes them to the CSV file.
 # ---------------------------------------------------------------
 
-def recupere_books_categorie(url_categ):
+def extract_books_categorie(url_categ):
     response = requests.get(url_categ)
     soup = BeautifulSoup(response.content, "html.parser")
 
@@ -137,11 +143,11 @@ def recupere_books_categorie(url_categ):
 
 
 # ---------------------------------------------------------------
-# Function that retrieves all categories
+# Function that extract all categories
 # and writes the books from each category to the CSV file
 # ---------------------------------------------------------------
 
-def recupere_categories():
+def extract_categories():
     url_index = "https://books.toscrape.com/index.html"
     response = requests.get(url_index)
     soup = BeautifulSoup(response.content, "html.parser")
@@ -152,23 +158,18 @@ def recupere_categories():
         href = li.find("a")
         url_categ = href["href"]
         full_url = urljoin(url_index, url_categ)
-        recupere_books_categorie(full_url)
+        extract_books_categorie(full_url)
         print(url_categ)
 
-        
-
+    
 
 # ---------------------------------------------------------------
-# Programme principal
+# main 
 # ---------------------------------------------------------------
 
-#import data_cleaner
+def main():
+    write_csv_header()
+    extract_categories()
 
-#def main():
-ecrit_entete()
-recupere_categories()
-
-#if __name__ == "__main__":
-#    main()
-
-
+if __name__ == "__main__":
+    main()
