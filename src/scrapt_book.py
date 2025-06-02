@@ -2,9 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import csv
+from data_cleaner import clean_number
 
 # ---------------------------------------------------------------
-# Fonction qui ouvre le fichier csv et ecrit écrit la ligne entete
+# Function that opens the CSV file and writes the header row.
 # ---------------------------------------------------------------
 
 def ecrit_entete():
@@ -26,10 +27,10 @@ def ecrit_entete():
         writer.writerow(en_tete)
 
 # ---------------------------------------------------------------
-# Fonction qui écrit la ligne d'un livre dans le fichier csv
+# Function that writes a book row to the CSV file
 # ---------------------------------------------------------------
 
-def ecrit_ligne(url_book):
+def write_book_line(url_book):
 
     url = url_book
 
@@ -53,17 +54,19 @@ def ecrit_ligne(url_book):
         universal_product_code = tds[0].text
 
         # prix avec les taxes
-        price_including_tax = tds[2].text
+        price_including_tax = clean_number(tds[2].text)
 
         # prix sans les taxes
-        price_excluding_tax = tds[3].text
+        price_excluding_tax = clean_number(tds[3].text)
 
         # nombre d'ouvrages disponibles
-        number_available = tds[5].text
+        number_available = clean_number(tds[5].text)
 
         # product_description
-        div_description = soup.find("div", id="product_description")
-        product_description = div_description.find_next_sibling("p").text.strip() 
+        #div_description = soup.find("div", id="product_description")
+        #product_description = div_description.find_next_sibling("p").text.strip() 
+        product_description = "toto"
+
 
         # category
         categ_bloc = soup.find_all('a')
@@ -97,7 +100,8 @@ def ecrit_ligne(url_book):
 
     with open("../data/output/wikibooks.csv", "a", newline="") as fichier_csv:
         writer = csv.writer(fichier_csv, delimiter=",")
-        writer
+        writer.writerow(ligne)
+
 
 """
     print('product_page_url: ',product_page_url)
@@ -106,15 +110,15 @@ def ecrit_ligne(url_book):
     print('price_including_tax: ',price_including_tax) 
     print('price_excluding_tax: ',price_excluding_tax)
     print('number_available: ',number_available) 
-    print('product description: ',description) 
+    print('product description: ',product_description) 
     print('category: ', category)
     print('review_rating: ',rating) 
     print('image url: ',image_url)     
 """
 
 # ---------------------------------------------------------------
-# Fonction qui recupère tous les livres d'une categorie 
-# pour les ecrire dans le fichier csv
+# Function that retrieves all books from a category
+# and writes them to the CSV file.
 # ---------------------------------------------------------------
 
 def recupere_books_categorie(url_categ):
@@ -129,26 +133,27 @@ def recupere_books_categorie(url_categ):
         book_urls.append(full_url)
 
     for book_url in book_urls:
-        ecrit_ligne(book_url)
+        write_book_line(book_url)
 
 
 # ---------------------------------------------------------------
-# Fonction qui récupère toutes les catégories 
-# et ecrit les livres de chaque categorie dans le fichier csv
+# Function that retrieves all categories
+# and writes the books from each category to the CSV file
 # ---------------------------------------------------------------
 
 def recupere_categories():
-    url_categ = "https://books.toscrape.com/index.html"
-    response = requests.get(url_categ)
+    url_index = "https://books.toscrape.com/index.html"
+    response = requests.get(url_index)
     soup = BeautifulSoup(response.content, "html.parser")
 
 # bloc_aside des categories
     bloc_aside = soup.find("aside", class_="sidebar")
     for li in bloc_aside.find_all("li"):
         href = li.find("a")
-        href_url = href["href"]
-        full_url = urljoin(url_categ, href_url)
+        url_categ = href["href"]
+        full_url = urljoin(url_index, url_categ)
         recupere_books_categorie(full_url)
+        print(url_categ)
 
         
 
@@ -157,12 +162,13 @@ def recupere_categories():
 # Programme principal
 # ---------------------------------------------------------------
 
-# IF MAIN
+#import data_cleaner
+
+#def main():
+ecrit_entete()
+recupere_categories()
+
+#if __name__ == "__main__":
+#    main()
 
 
-def main():
-    ecrit_entete()
-    recupere_categories()
-
-if __name__ == "__main__":
-    main()

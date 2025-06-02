@@ -10,6 +10,7 @@ def clean_number(text):
     else:
         value = 0
 
+    return value
 
 
 
