@@ -3,6 +3,8 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 import csv
 from data_cleaner import clean_number
+import re
+import sys
 
 # ---------------------------------------------------------------
 # Function that opens the CSV file and writes the header row.
@@ -25,6 +27,19 @@ def write_csv_header():
     with open("../data/output/wikibooks.csv", "w", newline="") as fichier_csv:
         writer = csv.writer(fichier_csv, delimiter=",")
         writer.writerow(csv_header)
+
+# ---------------------------------------------------------------
+# Function that download the book image
+# ---------------------------------------------------------------
+
+# def download_book_image(book_title, image_url, image_dir):
+def download_book_image(book_title, product_page_url, image_url, image_dir):
+    title_clean = re.sub(r"[^\w\-]+", "_", book_title.lower())
+    print ("title_clean: ", title_clean)
+    print('product_page_url: ',product_page_url)
+    print ("image_url: ", product_page_url)
+    print ("image_dir: ", image_dir)
+    
 
 # ---------------------------------------------------------------
 # Function that writes a book row to the CSV file
@@ -89,6 +104,10 @@ def write_book_line(url_book):
         # image url
         bloc_image = soup.find("div", class_="item active").img
         image_url = urljoin(url,bloc_image["src"])
+        image_dir = "data/output/images"
+
+        # downlaod image 
+        download_book_image(title, product_page_url, image_url, image_dir) 
 
     # csv book row
     ligne = [
@@ -121,7 +140,6 @@ def write_book_line(url_book):
     print('image url: ',image_url)     
     """
 
-
 # ---------------------------------------------------------------
 # Function that retrieves all books from a category
 # and writes them to the CSV file.
@@ -141,6 +159,9 @@ def extract_books_categorie(url_categ):
     for book_url in book_urls:
         write_book_line(book_url)
 
+    # TEST LINE TO BE DELETED OR COMMENTED
+        print("End of scrapping book page")
+        sys.exit()
 
 # ---------------------------------------------------------------
 # Function that extract all categories
@@ -160,6 +181,10 @@ def extract_categories():
         full_url = urljoin(url_index, url_categ)
         extract_books_categorie(full_url)
         print(url_categ)
+
+# TEST LINE TO BE DELETED OR COMMENTED
+#        print("End of scrapping books category")
+#        sys.exit()
 
     
 
