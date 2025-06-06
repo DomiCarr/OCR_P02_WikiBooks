@@ -13,6 +13,8 @@ def clean_number(text):
     return value
 
 
+def clean_repository_name(name):
+    return re.sub(r'[\W_]+', '-', name.lower()).strip('-')
 
 
 

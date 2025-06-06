@@ -1,16 +1,26 @@
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+from urllib.parse import urlparse
 import csv
-from data_cleaner import clean_number
+from data_cleaner import clean_number, clean_repository_name
 import re
 import sys
+import os
+from log_config import logger
 
 # ---------------------------------------------------------------
 # Function that opens the CSV file and writes the header row.
 # ---------------------------------------------------------------
 
-def write_csv_header():
+def write_csv_header(csv_path):
+    """
+    Function that opens the CSV file and writes the header row.
+
+    Parameters
+    IN: csv path (str) : Path to the csv file
+    OUT: none
+    """
     csv_header = [
         "product_page_url",
         "universal_product_code",
@@ -24,28 +34,61 @@ def write_csv_header():
         "image url"
         ]
 
-    with open("../data/output/wikibooks.csv", "w", newline="") as fichier_csv:
-        writer = csv.writer(fichier_csv, delimiter=",")
-        writer.writerow(csv_header)
+    try:
+        with open(csv_path, "w", newline="") as fichier_csv:
+            writer = csv.writer(fichier_csv, delimiter=",")
+            writer.writerow(csv_header)
+    except IOError as e:
+        print(f"Erreur writing CVS header to {csv_path: {e}}")
+
+
 
 # ---------------------------------------------------------------
 # Function that download the book image
 # ---------------------------------------------------------------
 
-# def download_book_image(book_title, image_url, image_dir):
 def download_book_image(book_title, product_page_url, image_url, image_dir):
-    title_clean = re.sub(r"[^\w\-]+", "_", book_title.lower())
-    print ("title_clean: ", title_clean)
-    print('product_page_url: ',product_page_url)
-    print ("image_url: ", product_page_url)
-    print ("image_dir: ", image_dir)
+    # Clean the title: replace all non-alphanumeric characters with an underscore
+    clean_title = re.sub(r'[^a-zA-Z0-9]+', '_', book_title.strip().lower())
+    
+    # Replace multiple consecutive underscores with a single underscore
+    clean_title = re.sub(r'_+', '_', clean_title)
+    
+    # Remove underscores at the start or end of the string
+    clean_title = clean_title.strip('_')
+
+    # Extract book ID from the URL
+    match = re.search(r'_(\d+)/index\.html$', product_page_url)
+    book_id = match.group(1) if match else "unknown"
+
+    # Get the image file extension
+    image_ext = os.path.splitext(urlparse(image_url).path)[1]
+
+    # Construct the final image filename
+    image_filename = f"{clean_title}_{book_id}{image_ext}"
+    image_path = os.path.join(image_dir, image_filename)
+
+    # getting the image 
+    response = requests.get(image_url)
+    print ("response: ", response)
+
+    if response.status_code == 200:
+        with open(image_path, 'wb') as f:
+            f.write(response.content)
+            print("IMAGE SAVED")
+    else:
+        raise ConnectionError(f"Failed to download image: {response.status_code}")
+
+    # saving the image
+
+
     
 
 # ---------------------------------------------------------------
 # Function that writes a book row to the CSV file
 # ---------------------------------------------------------------
 
-def write_book_line(url_book):
+def write_book_line(url_book, image_dir):
 
     url = url_book
 
@@ -58,7 +101,13 @@ def write_book_line(url_book):
         soup = BeautifulSoup(response.text, 'html.parser')
 
         # book title
-        title = soup.find('h1').text
+        title_soup = soup.find('h1')
+        if title_soup:
+            title = title_soup.text.strip()
+        else:
+            title = "NA"
+            logger.warning(f"Title not found on page: {url}")
+
 
         # on extrait la table
         table = soup.find('table')
@@ -77,16 +126,25 @@ def write_book_line(url_book):
         number_available = clean_number(tds[5].text)
 
         # product_description
-        div_description = soup.find('div', id='product_description')
-        product_description = div_description.find_next_sibling('p').text.strip() 
+        description_soup = soup.find('div', id='product_description')
+        if description_soup:
+            description_soup_sibling = description_soup.find_next_sibling('p')
+            if description_soup_sibling:
+                product_description = description_soup_sibling.text.strip()
+            else:
+                product_description = "NA"
+                logger.warning(f"Product description paragraph not found on page: {url}")
+        else:
+            product_description = "NA"
+            logger.warning(f"Product description block not found on page: {url}")
 
         # category
-        categ_bloc = soup.find_all('a')
-        category = categ_bloc[3].text
+        category_soup = soup.find_all('a')
+        category = category_soup[3].text
 
         # rating
-        rating_tag = soup.find("p", class_="star-rating")
-        rating_text = rating_tag.get("class")[1]  
+        rating_soup = soup.find("p", class_="star-rating")
+        rating_text = rating_soup.get("class")[1]  
         match rating_text:
             case 'One':
                 rating = 1
@@ -102,9 +160,8 @@ def write_book_line(url_book):
                 rating = 0  # Valeur par défaut si inconnu
 
         # image url
-        bloc_image = soup.find("div", class_="item active").img
-        image_url = urljoin(url,bloc_image["src"])
-        image_dir = "data/output/images"
+        image_soup = soup.find("div", class_="item active").img
+        image_url = urljoin(url,image_soup["src"])
 
         # downlaod image 
         download_book_image(title, product_page_url, image_url, image_dir) 
@@ -145,7 +202,7 @@ def write_book_line(url_book):
 # and writes them to the CSV file.
 # ---------------------------------------------------------------
 
-def extract_books_categorie(url_categ):
+def extract_books_categorie(url_categ, image_dir):
     response = requests.get(url_categ)
     soup = BeautifulSoup(response.content, "html.parser")
 
@@ -155,13 +212,14 @@ def extract_books_categorie(url_categ):
         href_url = href["href"]
         full_url = urljoin(url_categ, href_url)
         book_urls.append(full_url)
+    #    print ("href: ", href)
 
     for book_url in book_urls:
-        write_book_line(book_url)
+        write_book_line(book_url, image_dir)
 
     # TEST LINE TO BE DELETED OR COMMENTED
-        print("End of scrapping book page")
-        sys.exit()
+    #    print("End of scrapping book page")
+    #    sys.exit()
 
 # ---------------------------------------------------------------
 # Function that extract all categories
@@ -173,18 +231,31 @@ def extract_categories():
     response = requests.get(url_index)
     soup = BeautifulSoup(response.content, "html.parser")
 
-# bloc_aside des categories
-    bloc_aside = soup.find("aside", class_="sidebar")
-    for li in bloc_aside.find_all("li"):
+# # <aside> block containing the list of all book categories
+    category_bloc_soup = soup.find("aside", class_="sidebar")
+    categories_li = category_bloc_soup.find_all("li")
+    for li in categories_li[1:]:
         href = li.find("a")
+
+        # Extract and normalize category name
+        category_name_raw = href.text.strip()
+        category_name = clean_repository_name(category_name_raw)
+        print("=====> CATEGORY NAME: ",category_name)
+
+        # Build local image directory path
+        image_dir = os.path.join("..","data", "output", "images", category_name)
+        os.makedirs(image_dir, exist_ok=True)
+
+        # Build full category URL
         url_categ = href["href"]
         full_url = urljoin(url_index, url_categ)
-        extract_books_categorie(full_url)
-        print(url_categ)
+
+        # Scrape all books in category
+        extract_books_categorie(full_url, image_dir)
 
 # TEST LINE TO BE DELETED OR COMMENTED
-#        print("End of scrapping books category")
-#        sys.exit()
+        print("End of scrapping books category")
+        sys.exit()
 
     
 
@@ -192,8 +263,10 @@ def extract_categories():
 # main 
 # ---------------------------------------------------------------
 
+csv_path = "../data/output/wikibooks.csv"  
+
 def main():
-    write_csv_header()
+    write_csv_header(csv_path)
     extract_categories()
 
 if __name__ == "__main__":
