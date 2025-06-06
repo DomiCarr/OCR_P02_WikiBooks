@@ -84,20 +84,17 @@ def download_book_image(book_title, product_page_url, image_url, image_dir):
     # saving the image
 
 
-    
 
 # ---------------------------------------------------------------
 # Function that writes a book row to the CSV file
 # ---------------------------------------------------------------
 
-def write_book_line(url_book, image_dir):
-
-    url = url_book
+def write_book_line(product_page_url, image_dir):
 
     # url de la page du livre
-    product_page_url = url
+    product_page_url = product_page_url
 
-    response = requests.get(url)
+    response = requests.get(product_page_url)
 
     if response.ok:
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -108,7 +105,7 @@ def write_book_line(url_book, image_dir):
             title = title_soup.text.strip()
         else:
             title = "NA"
-            logger.warning(f"Title not found on page: {url}")
+            logger.warning(f"Title not found on page: {product_page_url}")
 
 
         # on extrait la table
@@ -135,13 +132,13 @@ def write_book_line(url_book, image_dir):
                 product_description = description_soup_sibling.text.strip()
             else:
                 product_description = "NA"
-                logger.warning(f"Product description paragraph not found on page: {url}")
+                logger.warning(f"Product description paragraph not found on page: {product_page_url}")
         else:
             product_description = "NA"
-            logger.warning(f"Product description block not found on page: {url}")
+            logger.warning(f"Product description block not found on page: {product_page_url}")
 
         # =============================================
-        # Category extraction from breadcrumb navigation
+        # Category from breadcrumb navigation
         breadcrumb_soup = soup.find("ul", class_="breadcrumb")
 
         if breadcrumb_soup:
@@ -150,10 +147,10 @@ def write_book_line(url_book, image_dir):
                 category = breadcrumb_soup_links[2].text.strip()
             else:
                 category = "NA"
-                logger.warning(f"Category link not found in breadcrumb on page: {url}")
+                logger.warning(f"Category link not found in breadcrumb on page: {product_page_url}")
         else:
             category = "NA"
-            logger.warning(f"Breadcrumb not found on page: {url}")
+            logger.warning(f"Breadcrumb not found on page: {product_page_url}")
 
         # =============================================
         # rating 
@@ -185,20 +182,43 @@ def write_book_line(url_book, image_dir):
                         rating = 0  # Default if unknown rating text
             else:
                 rating = 0
-                logger.warning(f"Rating class missing or incomplete on page: {url}")
+                logger.warning(f"Rating class missing or incomplete on page: {product_page_url}")
         else:
             rating = 0
-            logger.warning(f"Rating element not found on page: {url}")
+            logger.warning(f"Rating element not found on page: {product_page_url}")
 
-        print("rating: ", rating)
-        sys.exit()
+
         # =============================================
         # image url
-        image_soup = soup.find("div", class_="item active").img
-        image_url = urljoin(url,image_soup["src"])
+        #image_soup = soup.find("div", class_="item active").img
+        #image_url = urljoin(product_page_url,image_soup["src"])
 
         # downlaod image 
-        download_book_image(title, product_page_url, image_url, image_dir) 
+        #download_book_image(title, product_page_url, image_url, image_dir) 
+
+
+        # =============================================
+        # image extraction and download
+
+        # Find the <img> tag inside the <div class="item active">
+        image_container_soup = soup.find("div", class_="item active")
+
+        if image_container_soup:
+            image_soup = image_container_soup.find("img")
+
+            if image_soup and image_soup.get("src"):
+                # image URL = 
+                image_url = urljoin(product_page_url, image_soup["src"])
+
+                # Download image using helper function
+                download_book_image(title, product_page_url, image_url, image_dir)
+            else:
+                image_url = "NA"
+                logger.warning(f"Image tag or src attribute missing on page: {url}")
+        else:
+            image_url = "NA"
+            logger.warning(f"Image container <div class='item active'> not found on page: {url}")
+
 
     # csv book row
     ligne = [
@@ -217,6 +237,8 @@ def write_book_line(url_book, image_dir):
     with open("../data/output/wikibooks.csv", "a", newline="") as fichier_csv:
         writer = csv.writer(fichier_csv, delimiter=",")
         writer.writerow(ligne)
+
+    sys.exit()
 
     """
     logger.info(f"product_page_url: {product_page_url}")
@@ -300,8 +322,10 @@ def extract_categories():
 csv_path = "../data/output/wikibooks.csv"  
 
 def main():
+    logger.info("========== >>>> Program started")
     write_csv_header(csv_path)
     extract_categories()
+    logger.info("<<<< =========== Program ended")
 
 if __name__ == "__main__":
     main()
