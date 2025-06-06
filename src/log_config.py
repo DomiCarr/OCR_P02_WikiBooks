@@ -7,7 +7,7 @@ LOG_DIR = os.path.join ("..","log")
 os.makedirs(LOG_DIR, exist_ok=True)
 
 # create the log file with current datetime
-LOG_FILE = os.path.join(LOG_DIR, f"WikiBooks_{datetime.now().strftime('%Y-%m-%d')}.log" )
+LOG_FILE = os.path.join(LOG_DIR, f"WikiBooks_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log" )
 
 # configure the logger
 logger = logging.getLogger("wikibooks_logger")
@@ -23,13 +23,13 @@ file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
 file_handler.setFormatter(formatter)
 file_handler.setLevel(logging.DEBUG)
 
-# Create console handler to output logs to the console (optional)
+# Console handler: only WARNING and above will be shown on terminal
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.WARNING)
 
 # Add handlers to the logger if they are not already added
 if not logger.handlers:
     logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    # logger.addHandler(console_handler)
 
