@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 # Local application imports - project-specific modules
 from data_cleaner import clean_number, clean_repository_name
 from log_config import logger
+from requests_tools import requests_get_response
 
 # ---------------------------------------------------------------
 # Function that opens the CSV file and writes the header row.
@@ -91,136 +92,128 @@ def download_book_image(book_title, product_page_url, image_url, image_dir):
 
 def write_book_line(product_page_url, image_dir):
 
-    # url de la page du livre
-    product_page_url = product_page_url
+    # Request product_page_url; return None if the request fails
+    if (response := requests_get_response(product_page_url)) is None: return
 
-    response = requests.get(product_page_url)
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-    if response.ok:
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # book title
-        title_soup = soup.find('h1')
-        if title_soup:
-            title = title_soup.text.strip()
-        else:
-            title = "NA"
-            logger.warning(f"Title not found on page: {product_page_url}")
+    # ==== Scrap === >> book title
+    title_soup = soup.find('h1')
+    if title_soup:
+        title = title_soup.text.strip()
+    else:
+        title = "NA"
+        logger.warning(f"Title not found on page: {product_page_url}")
 
 
-        # on extrait la table
-        table = soup.find('table')
-        tds = soup.find_all('td')
+    # ==== Scrap === >> product informations from the product information table
+    tds_soup = soup.find_all('td')
 
-        # upc code
-        universal_product_code = tds[0].text
+    if len(tds_soup) > 7:
 
-        # price including taxes
-        price_including_tax = clean_number(tds[2].text)
+        # 1st td: upc code
+        universal_product_code = tds_soup[0].text.strip()
 
-        # price excluding taxes
-        price_excluding_tax = clean_number(tds[3].text)
+    # 3rd td: price including taxes
+        price_including_tax = clean_number(tds_soup[2].text.strip())
 
-        # number of available books
-        number_available = clean_number(tds[5].text)
+        # 4th td : price excluding taxes
+        price_excluding_tax = clean_number(tds_soup[3].text.strip())
 
-        # product_description
-        description_soup = soup.find('div', id='product_description')
-        if description_soup:
-            description_soup_sibling = description_soup.find_next_sibling('p')
-            if description_soup_sibling:
-                product_description = description_soup_sibling.text.strip()
-            else:
-                product_description = "NA"
-                logger.warning(f"Product description paragraph not found on page: {product_page_url}")
+        # 5th td: number of available books
+        number_available = clean_number(tds_soup[5].text.strip())
+    else:
+        # Default values or error handling if there are not enough <td> elements
+        universal_product_code = "NA"
+        price_including_tax = 0.0
+        price_excluding_tax = 0.0
+        number_available = 0
+        logger.warning(f"Not enough <td> elements found on page: {product_page_url}")
+
+    # ==== Scrap === >> product_description
+    description_soup = soup.find('div', id='product_description')
+    if description_soup:
+        description_soup_sibling = description_soup.find_next_sibling('p')
+        if description_soup_sibling:
+            product_description = description_soup_sibling.text.strip()
         else:
             product_description = "NA"
-            logger.warning(f"Product description block not found on page: {product_page_url}")
+            logger.warning(f"Product description paragraph not found on page: {product_page_url}")
+    else:
+        product_description = "NA"
+        logger.warning(f"Product description block not found on page: {product_page_url}")
 
-        # =============================================
-        # Category from breadcrumb navigation
-        breadcrumb_soup = soup.find("ul", class_="breadcrumb")
+    # ==== Scrap === >> Category from breadcrumb navigation
+    breadcrumb_soup = soup.find("ul", class_="breadcrumb")
 
-        if breadcrumb_soup:
-            breadcrumb_soup_links = breadcrumb_soup.find_all("a")
-            if breadcrumb_soup_links:
-                category = breadcrumb_soup_links[2].text.strip()
-            else:
-                category = "NA"
-                logger.warning(f"Category link not found in breadcrumb on page: {product_page_url}")
+    if breadcrumb_soup:
+        breadcrumb_soup_links = breadcrumb_soup.find_all("a")
+        if breadcrumb_soup_links:
+            category = breadcrumb_soup_links[2].text.strip()
         else:
             category = "NA"
-            logger.warning(f"Breadcrumb not found on page: {product_page_url}")
+            logger.warning(f"Category link not found in breadcrumb on page: {product_page_url}")
+    else:
+        category = "NA"
+        logger.warning(f"Breadcrumb not found on page: {product_page_url}")
 
-        # =============================================
-        # rating 
+    # ==== Scrap === >> rating 
 
-        # Find the <p> tag with class "star-rating"
-        rating_soup = soup.find("p", class_="star-rating")
+    # Find the <p> tag with class "star-rating"
+    rating_soup = soup.find("p", class_="star-rating")
 
-        if rating_soup:
-            # Get the list of classes from the tag; default to empty list if none
-            rating_soup_classes = rating_soup.get("class", [])
+    if rating_soup:
+        # Get the list of classes from the tag; default to empty list if none
+        rating_soup_classes = rating_soup.get("class", [])
 
-            if rating_soup_classes and len(rating_soup_classes) > 1:
-                # The second class indicates the rating as a word ("One", "Two", ...)
-                rating_text = rating_soup_classes[1]
+        if rating_soup_classes and len(rating_soup_classes) > 1:
+            # The second class indicates the rating as a word ("One", "Two", ...)
+            rating_text = rating_soup_classes[1]
 
-                # Map rating text to numeric value using match-case (Python 3.10+)
-                match rating_text:
-                    case 'One':
-                        rating = 1
-                    case 'Two':
-                        rating = 2
-                    case 'Three':
-                        rating = 3
-                    case 'Four':
-                        rating = 4
-                    case 'Five':
-                        rating = 5
-                    case _:
-                        rating = 0  # Default if unknown rating text
-            else:
-                rating = 0
-                logger.warning(f"Rating class missing or incomplete on page: {product_page_url}")
+            # Map rating text to numeric value using match-case (Python 3.10+)
+            match rating_text:
+                case 'One':
+                    rating = 1
+                case 'Two':
+                    rating = 2
+                case 'Three':
+                    rating = 3
+                case 'Four':
+                    rating = 4
+                case 'Five':
+                    rating = 5
+                case _:
+                    rating = 0  # Default if unknown rating text
         else:
             rating = 0
-            logger.warning(f"Rating element not found on page: {product_page_url}")
+            logger.warning(f"Rating class missing or incomplete on page: {product_page_url}")
+    else:
+        rating = 0
+        logger.warning(f"Rating element not found on page: {product_page_url}")
 
+    # ==== Scrap === >> image extraction and download
 
-        # =============================================
-        # image url
-        #image_soup = soup.find("div", class_="item active").img
-        #image_url = urljoin(product_page_url,image_soup["src"])
+    # Find the <img> tag inside the <div class="item active">
+    image_container_soup = soup.find("div", class_="item active")
 
-        # downlaod image 
-        #download_book_image(title, product_page_url, image_url, image_dir) 
+    if image_container_soup:
+        image_soup = image_container_soup.find("img")
 
+        if image_soup and image_soup.get("src"):
+            # build image URL 
+            image_url = urljoin(product_page_url, image_soup.get("src"))
 
-        # =============================================
-        # image extraction and download
-
-        # Find the <img> tag inside the <div class="item active">
-        image_container_soup = soup.find("div", class_="item active")
-
-        if image_container_soup:
-            image_soup = image_container_soup.find("img")
-
-            if image_soup and image_soup.get("src"):
-                # image URL = 
-                image_url = urljoin(product_page_url, image_soup["src"])
-
-                # Download image using helper function
-                download_book_image(title, product_page_url, image_url, image_dir)
-            else:
-                image_url = "NA"
-                logger.warning(f"Image tag or src attribute missing on page: {url}")
+            # Download image using helper function
+            download_book_image(title, product_page_url, image_url, image_dir)
         else:
             image_url = "NA"
-            logger.warning(f"Image container <div class='item active'> not found on page: {url}")
+            logger.warning(f"Image tag or src attribute missing on page: {product_page_url}")
+    else:
+        image_url = "NA"
+        logger.warning(f"Image container <div class='item active'> not found on page: {product_page_url}")
 
 
-    # csv book row
+    # write the book row in the cvs file
     ligne = [
         product_page_url,
         universal_product_code,
@@ -238,7 +231,8 @@ def write_book_line(product_page_url, image_dir):
         writer = csv.writer(fichier_csv, delimiter=",")
         writer.writerow(ligne)
 
-    sys.exit()
+    # TEST LINE TO BE DELETED OR COMMENTED
+    #sys.exit()
 
     """
     logger.info(f"product_page_url: {product_page_url}")
@@ -259,16 +253,25 @@ def write_book_line(product_page_url, image_dir):
 # ---------------------------------------------------------------
 
 def extract_books_categorie(url_categ, image_dir):
+
     response = requests.get(url_categ)
+
+    # Check if the HTTP response status is ok (200-299)
+    if not response.ok:
+        logger.warning(f"Request failed for category page: {url_categ} with status code {response.status_code}")
+        return  # Exit the function if the request failed
+
     soup = BeautifulSoup(response.content, "html.parser")
 
     book_urls = []
     for h3 in soup.find_all("h3"):
         href = h3.find("a")
-        href_url = href["href"]
-        full_url = urljoin(url_categ, href_url)
-        book_urls.append(full_url)
-    #    logger.info(f"href: {href}"")
+        if href and href.has_attr("href"):
+            href_url = href["href"]
+            full_url = urljoin(url_categ, href_url)
+            book_urls.append(full_url)
+        else:
+            logger.warning(f"'a' tag with href not found in h3 on page: {url_categ}")
 
     for book_url in book_urls:
         write_book_line(book_url, image_dir)
@@ -309,9 +312,9 @@ def extract_categories():
         # Scrape all books in category
         extract_books_categorie(full_url, image_dir)
 
-# TEST LINE TO BE DELETED OR COMMENTED
-        logger.info("End of scrapping books category")
-        sys.exit()
+        # TEST LINE TO BE DELETED OR COMMENTED
+        #logger.info("End of scrapping books category")
+        #sys.exit()
 
     
 

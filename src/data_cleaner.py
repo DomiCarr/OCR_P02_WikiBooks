@@ -1,6 +1,6 @@
-# Extract numbers from a string
-# Return 0 if no number found
+# Extract numbers from a string - Return 0 if no number found
 
+# Standard library imports - built-in modules that come with Python
 import re
 
 def clean_number(text):
