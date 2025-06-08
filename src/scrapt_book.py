@@ -1,6 +1,8 @@
-#
+#----------------------------------------------------------------------
 # scrapt_book.py
 #
+# App that extract books information from the web site: https://books.toscrape.com/index.html
+# ---------------------------------------------------------------------
 
 # Standard library imports - built-in modules that come with Python
 import csv
@@ -115,7 +117,7 @@ def write_book_line(product_page_url, image_dir):
     # ==== Scrap === >> product informations from the product information table
     tds_soup = soup.find_all('td')
 
-    if len(tds_soup) > 7:
+    if len(tds_soup) > 6:
 
         # 1st td: upc code
         universal_product_code = tds_soup[0].text.strip()
@@ -243,28 +245,21 @@ def write_book_line(product_page_url, image_dir):
     except Exception as e:
         logger.error(f"Error writing to CSV file {CSV_PATH_FILE}: {e}") # Log error on CSV write failure
 
-
-
-        # Write one row representing one book data
-    # Log an error if writing to the CSV file fails
-
-
-
-    # TEST LINE TO BE DELETED OR COMMENTED
-    #sys.exit()
-
-    """
-    logger.info(f"product_page_url: {product_page_url}")
-    logger.info(f"universal_product_code: {universal_product_code}")
-    logger.info(f"title: {title}")
-    logger.info(f"price_including_tax: {price_including_tax}")
-    logger.info(f"price_excluding_tax: {price_excluding_tax}")
-    logger.info(f"number_available: {number_available}")
-    logger.info(f"product description: {product_description}")
-    logger.info(f"category: {category}")
-    logger.info(f"review_rating: {rating}")
-    logger.info(f"image url: {image_url}")    
-    """
+    #-------------------------------------------------------------------
+    #TEST LINES FOR ONE BOOK - TO BE DELETED OR DISABLED
+    #-------------------------------------------------------------------
+    #logger.info(f"product_page_url: {product_page_url}")
+    #logger.info(f"universal_product_code: {universal_product_code}")
+    #logger.info(f"title: {title}")
+    #logger.info(f"price_including_tax: {price_including_tax}")
+    #logger.info(f"price_excluding_tax: {price_excluding_tax}")
+    #logger.info(f"number_available: {number_available}")
+    #logger.info(f"product description: {product_description}")
+    #logger.info(f"category: {category}")
+    #logger.info(f"review_rating: {rating}")
+    #logger.info(f"image url: {image_url}")    
+    
+    sys.exit()
 
 # ---------------------------------------------------------------
 # Function that retrieves all books from a category
@@ -297,9 +292,12 @@ def extract_books_categorie(url_categ, image_dir):
     for book_url in book_urls:
         write_book_line(book_url, image_dir)
 
-    # TEST LINE TO BE DELETED OR COMMENTED
-    #    logger.info("End of scrapping book page")
-        sys.exit()
+    #-------------------------------------------------------------------
+    #TEST LINES FOR ONE CATEGORY - TO BE DELETED OR DISABLED
+    #-------------------------------------------------------------------
+    
+    sys.exit()
+
 
 # ---------------------------------------------------------------
 # Function that extract all categories
@@ -315,12 +313,14 @@ def extract_categories():
     category_bloc_soup = soup.find("aside", class_="sidebar")
     categories_li = category_bloc_soup.find_all("li")
     for li in categories_li[1:]:
+
         href = li.find("a")
 
         # Extract and normalize category name
         category_name_raw = href.text.strip()
         category_name = clean_repository_name(category_name_raw)
         logger.info(f"=====> CATEGORY NAME: {category_name}")
+        print(f"=====> CATEGORY NAME: {category_name}")
 
         # Build local image directory path
         image_dir = os.path.join("..","data", "output", "images", category_name)
@@ -333,11 +333,6 @@ def extract_categories():
         # Scrape all books in category
         extract_books_categorie(full_url, image_dir)
 
-        # TEST LINE TO BE DELETED OR COMMENTED
-        #logger.info("End of scrapping books category")
-        #sys.exit()
-
-    
 
 # ---------------------------------------------------------------
 # main 
