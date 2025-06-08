@@ -1,3 +1,10 @@
+#----------------------------------------------------------------------
+# log_config.py
+#
+# Logging configuration for log management.
+#----------------------------------------------------------------------
+
+# Standard library imports - built-in modules that come with Python
 import logging
 import os
 from datetime import datetime

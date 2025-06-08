@@ -52,8 +52,6 @@ def write_csv_header(csv_path):
     except IOError as e:
         logger.info(f"Erreur writing CVS header to {csv_path: {e}}")
 
-
-
 # ---------------------------------------------------------------
 # Function that download the book image
 # ---------------------------------------------------------------
@@ -88,10 +86,6 @@ def download_book_image(book_title, product_page_url, image_url, image_dir):
             f.write(response.content)
     else:
         raise ConnectionError(f"Failed to download image: {response.status_code}")
-
-    # saving the image
-
-
 
 # ---------------------------------------------------------------
 # Function that writes a book row to the CSV file
@@ -259,7 +253,7 @@ def write_book_line(product_page_url, image_dir):
     #logger.info(f"review_rating: {rating}")
     #logger.info(f"image url: {image_url}")    
     
-    sys.exit()
+    #sys.exit()
 
 # ---------------------------------------------------------------
 # Function that retrieves all books from a category
@@ -295,9 +289,7 @@ def extract_books_categorie(url_categ, image_dir):
     #-------------------------------------------------------------------
     #TEST LINES FOR ONE CATEGORY - TO BE DELETED OR DISABLED
     #-------------------------------------------------------------------
-    
-    sys.exit()
-
+    #sys.exit()
 
 # ---------------------------------------------------------------
 # Function that extract all categories
@@ -309,7 +301,7 @@ def extract_categories():
     response = requests.get(url_index)
     soup = BeautifulSoup(response.content, "html.parser")
 
-# # <aside> block containing the list of all book categories
+# <aside> block containing the list of all book categories
     category_bloc_soup = soup.find("aside", class_="sidebar")
     categories_li = category_bloc_soup.find_all("li")
     for li in categories_li[1:]:
@@ -332,7 +324,6 @@ def extract_categories():
 
         # Scrape all books in category
         extract_books_categorie(full_url, image_dir)
-
 
 # ---------------------------------------------------------------
 # main 

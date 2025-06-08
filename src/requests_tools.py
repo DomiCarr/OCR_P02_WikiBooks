@@ -38,8 +38,20 @@ def make_requests(url, timeout=5, max_retries=3, backoff_factor=0.5):
     retry_strategy = Retry(
         total=max_retries,
         backoff_factor=backoff_factor,
-        status_forcelist=[429, 500, 502, 503, 504],  # Retry on these server errors
-        allowed_methods=["HEAD", "GET", "OPTIONS"]   # Retry only for safe methods
+        # Retry on these server errors
+        status_forcelist=[
+            429,
+            500,
+            502,
+            503,
+            504,
+        ],
+        # Retry only for safe methods
+        allowed_methods=[
+            "HEAD",
+            "GET",
+            "OPTIONS",
+        ],
     )
 
     # Create an adapter using this retry strategy
