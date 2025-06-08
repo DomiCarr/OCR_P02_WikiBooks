@@ -21,15 +21,16 @@ from log_config import logger
 from requests_tools import make_requests
 
 # ---------------------------------------------------------------
-# Function that opens the CSV file and writes the header row.
+# Function that opens the csv file and writes the header row.
 # ---------------------------------------------------------------
 
-def write_csv_header(csv_path):
+def write_csv_header(csv_path,csv_path_file):
     """
-    Function that opens the CSV file and writes the header row.
+    Function that opens the csv file and writes the header row.
 
     Parameters
-    IN: csv path (str) : Path to the csv file
+    IN: csv_path : Path to the csv directory
+    IN: csv_path_file : Path to the csv file
     OUT: none
     """
     csv_header = [
@@ -44,13 +45,21 @@ def write_csv_header(csv_path):
         "review_rating",
         "image url"
         ]
-
+    # Create the directory in needed
     try:
-        with open(csv_path, "w", newline="") as fichier_csv:
+        # creates all intermediate-level dirs if needed
+        os.makedirs(csv_path, exist_ok=True)  
+        print(f"Folder created or already exists: {csv_path}")
+    except Exception as e:
+        print(f"Error creating folder {csv_path}: {e}")
+
+    # Write the header row       
+    try:
+        with open(csv_path_file, "w", newline="") as fichier_csv:
             writer = csv.writer(fichier_csv, delimiter=",")
             writer.writerow(csv_header)
     except IOError as e:
-        logger.info(f"Erreur writing CVS header to {csv_path: {e}}")
+        logger.info(f"Erreur writing csv header to {csv_path: {e}}")
 
 # ---------------------------------------------------------------
 # Function that download the book image
@@ -88,7 +97,7 @@ def download_book_image(book_title, product_page_url, image_url, image_dir):
         raise ConnectionError(f"Failed to download image: {response.status_code}")
 
 # ---------------------------------------------------------------
-# Function that writes a book row to the CSV file
+# Function that writes a book row to the csv file
 # ---------------------------------------------------------------
 
 def write_book_line(product_page_url, image_dir):
@@ -215,7 +224,7 @@ def write_book_line(product_page_url, image_dir):
         logger.warning(f"Image container <div class='item active'> not found on page: {product_page_url}")
 
 
-    # write the book row in the cvs file
+    # write the book row in the csv file
     ligne = [
         product_page_url,
         universal_product_code,
@@ -229,15 +238,14 @@ def write_book_line(product_page_url, image_dir):
         image_url
         ]
     
-    CSV_PATH_FILE = "../data/output/wikibooks.csv"
+    # Open csv file in append mode 
     try:
-        # Open CSV file in append mode with UTF-8 encoding to support special characters
-        with open(CSV_PATH_FILE, "a", newline="") as fichier_csv:
+        with open(csv_path_file, "a", newline="") as fichier_csv:
             # Write the book row
             writer = csv.writer(fichier_csv, delimiter=",")
             writer.writerow(ligne)
     except Exception as e:
-        logger.error(f"Error writing to CSV file {CSV_PATH_FILE}: {e}") # Log error on CSV write failure
+        logger.error(f"Error writing to csv file {csv_path_file}: {e}") # Log error on csv write failure
 
     #-------------------------------------------------------------------
     #TEST LINES FOR ONE BOOK - TO BE DELETED OR DISABLED
@@ -257,7 +265,7 @@ def write_book_line(product_page_url, image_dir):
 
 # ---------------------------------------------------------------
 # Function that retrieves all books from a category
-# and writes them to the CSV file.
+# and writes them to the csv file.
 # ---------------------------------------------------------------
 
 def extract_books_categorie(url_categ, image_dir):
@@ -293,7 +301,7 @@ def extract_books_categorie(url_categ, image_dir):
 
 # ---------------------------------------------------------------
 # Function that extract all categories
-# and writes the books from each category to the CSV file
+# and writes the books from each category to the csv file
 # ---------------------------------------------------------------
 
 def extract_categories():
@@ -329,11 +337,13 @@ def extract_categories():
 # main 
 # ---------------------------------------------------------------
 
-csv_path = "../data/output/wikibooks.csv"  
+
+csv_path = "../data/output"  
+csv_path_file = "../data/output/wikibooks.csv"  
 
 def main():
     logger.info("========== >>>> Program started")
-    write_csv_header(csv_path)
+    write_csv_header(csv_path,csv_path_file)
     extract_categories()
     logger.info("<<<< =========== Program ended")
 
