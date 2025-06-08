@@ -1,3 +1,7 @@
+#
+# scrapt_book.py
+#
+
 # Standard library imports - built-in modules that come with Python
 import csv
 import os
@@ -5,14 +9,14 @@ import re
 import sys
 from urllib.parse import urljoin, urlparse
 
-# Third-party imports - external libraries installed via pip
+# External libraries installed via pip
 import requests
 from bs4 import BeautifulSoup
 
-# Local application imports - project-specific modules
+# Local Librairies : project-specific modules
 from data_cleaner import clean_number, clean_repository_name
 from log_config import logger
-from requests_tools import requests_get_response
+from requests_tools import make_requests
 
 # ---------------------------------------------------------------
 # Function that opens the CSV file and writes the header row.
@@ -73,8 +77,9 @@ def download_book_image(book_title, product_page_url, image_url, image_dir):
     image_filename = f"{clean_title}_{book_id}{image_ext}"
     image_path = os.path.join(image_dir, image_filename)
 
-    # getting the image 
-    response = requests.get(image_url)
+    # Request image_url; return None if the request fails
+    if (response := make_requests(image_url)) is None:
+        return
 
     if response.status_code == 200:
         with open(image_path, 'wb') as f:
@@ -93,7 +98,8 @@ def download_book_image(book_title, product_page_url, image_url, image_dir):
 def write_book_line(product_page_url, image_dir):
 
     # Request product_page_url; return None if the request fails
-    if (response := requests_get_response(product_page_url)) is None: return
+    if (response := make_requests(product_page_url)) is None:
+        return
 
     soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -226,10 +232,23 @@ def write_book_line(product_page_url, image_dir):
         rating,
         image_url
         ]
+    
+    CSV_PATH_FILE = "../data/output/wikibooks.csv"
+    try:
+        # Open CSV file in append mode with UTF-8 encoding to support special characters
+        with open(CSV_PATH_FILE, "a", newline="") as fichier_csv:
+            # Write the book row
+            writer = csv.writer(fichier_csv, delimiter=",")
+            writer.writerow(ligne)
+    except Exception as e:
+        logger.error(f"Error writing to CSV file {CSV_PATH_FILE}: {e}") # Log error on CSV write failure
 
-    with open("../data/output/wikibooks.csv", "a", newline="") as fichier_csv:
-        writer = csv.writer(fichier_csv, delimiter=",")
-        writer.writerow(ligne)
+
+
+        # Write one row representing one book data
+    # Log an error if writing to the CSV file fails
+
+
 
     # TEST LINE TO BE DELETED OR COMMENTED
     #sys.exit()
@@ -254,7 +273,9 @@ def write_book_line(product_page_url, image_dir):
 
 def extract_books_categorie(url_categ, image_dir):
 
-    response = requests.get(url_categ)
+    # Request url_categ; return None if the request fails
+    if (response := make_requests(url_categ)) is None:
+        return
 
     # Check if the HTTP response status is ok (200-299)
     if not response.ok:
@@ -278,7 +299,7 @@ def extract_books_categorie(url_categ, image_dir):
 
     # TEST LINE TO BE DELETED OR COMMENTED
     #    logger.info("End of scrapping book page")
-    #    sys.exit()
+        sys.exit()
 
 # ---------------------------------------------------------------
 # Function that extract all categories

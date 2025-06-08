@@ -14,9 +14,7 @@ env/
 # settings de VSCode
 .vscode
 
-#Spécifique projet P02: données et images générées
-input/
-output/
-
+#Données entrée etdonnées et générées
+data/
 
 

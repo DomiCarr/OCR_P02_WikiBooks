@@ -3,13 +3,13 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-def requests_get_response(url):
+def make_requests(url, timeout=5):
     """
     Perform a GET request to the given URL and return the response object.
     Generate a warning et return None if exception
     """
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=timeout)
     except requests.exceptions.RequestException as e:
         logger.warning(f"Request failed for URL {url}: {e}")
         return None  # Return None if an exception occurred during the request
