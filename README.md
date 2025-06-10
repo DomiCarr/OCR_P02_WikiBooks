@@ -1,30 +1,79 @@
-# WikiBooks : ETL d'extraction des données sur Books to Scrape
-depuis le dossier des application de la société 
-se positionner dans le dossier qui contient le depot git:
+# WikiBooks
+Wikibooks is an application that extracts book datas and pictures from the website [Books to Scrape](http://books.toscrape.com/) 
+
+## About wikibooks
+
+Wikibooks will store the date in the data/output repository
+
+## Project Architecture
+
+![Project Architecture](assets/wikibooks_architecture.png)
+
+The image above shows the overall structure of the scraping and data processing pipeline.
+
+## Data Folder Structure
+
+![Data Folder Structure](assets/wikibooks_data_folder.png)
+
+This screenshot displays the organization of the output data, including CSV files and downloaded images.
+
+* **Wikibooks.cvs:**
+file with all the website books data
+One row per book:
+    ● product_page_url
+    ● universal_ product_code (upc)
+    ● title
+    ● price_including_tax
+    ● price_excluding_tax
+    ● number_available
+    ● product_description
+    ● category
+    ● review_rating
+    ● image_url
+
+* **images repository:**
+with all the website book images
+Each image will be named with the title of the book + the id of the book
+
+# Application Installation
+
+This application need to be installed from the OCR_P02_WikiBooks repository that has been created in the company app by the git clone command 
+(git clone https://github.com/DomiCarr/OCR_P02_WikiBooks)
+
+*** enter the application repository:**
 cd OCR_P02_WikiBooks
 
-## Créer et activer l'environnement virtuel venv
-## Saisir les commmandes ci-dessous:
+### Create and activate the virtual environment
 python -m venv env
 source env/bin/activate
 
-## Installer les packages à partir de requirements.txt
+### Install the packages from requirements.txt
 pip install -r requirements.txt
 
-## Verifier que les packages sont bien installés en comparant avec requirements.txt
+### Check that the packages has been installed
 pip freeze
-le resultalt doit contenir a minima:
-beautifulsoup4==4.13.4
-requests==2.32.3
 
-## se positionner dans le dossier src puis lancer le programme:
+The result mustt have the 2 following lines bellow:
+
+![pip freeze](assets/wikibooks_pip_freeze.png)
+
+### Run the application
 cd src
-python src/scrapt_book.py
+python wikibooks.py
 
-## Execution du programme
-lorsque le programme sera terminé, il aura créé :
-1. un dossier log contenant les logs de chaque execution du programme
-2. un dossier data/output contenant le fichier csv wikibooks.csv qui 
-contient l'extration des données de tous les livres du site
-3. un dossier data/output/images contenant une arborescen de dossiers par catégories avec les images des livres de chaque catégorie
+## Fabriqué avec
+[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
+
+
+## Releases
+**First release :** 1.0
+
+## Authors
+* **Dominique Carrasco** _alias_ [@DomiCarr](https://github.com/DomiCarr)
+
+## License
+
+This project has an [OpenClassrooms](https://openclassrooms.com/fr/policies/terms-conditions) license
+
+
 
