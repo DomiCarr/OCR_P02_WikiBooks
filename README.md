@@ -1,21 +1,19 @@
 # WikiBooks
 Wikibooks is an application that extracts book datas and pictures from the website [Books to Scrape](http://books.toscrape.com/) 
 
-## About wikibooks
+## Application Architecture
 
-Wikibooks will store the date in the data/output repository
-
-## Project Architecture
+The screenshot shows the overall structure of the scraping and data processing pipeline.
 
 ![Project Architecture](assets/wikibooks_architecture.png)
 
-The image above shows the overall structure of the scraping and data processing pipeline.
 
 ## Data Folder Structure
 
-![Data Folder Structure](assets/wikibooks_data_folder.png)
+This screenshots displays the organization of the downloaded images.
 
-This screenshot displays the organization of the output data, including CSV files and downloaded images.
+![Data Folder Structure](assets/wikibooks_data_folder_1.png)
+![Data Folder Structure](assets/wikibooks_data_folder_2.png)
 
 * **Wikibooks.cvs:**
 file with all the website books data
@@ -53,7 +51,7 @@ pip install -r requirements.txt
 ### Check that the packages has been installed
 pip freeze
 
-The result mustt have the 2 following lines bellow:
+The result must have the 2 following lines bellow:
 
 ![pip freeze](assets/wikibooks_pip_freeze.png)
 
