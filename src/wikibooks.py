@@ -247,22 +247,6 @@ def write_book_line(product_page_url, image_dir):
     except Exception as e:
         logger.error(f"Error writing to csv file {csv_path_file}: {e}") # Log error on csv write failure
 
-    #-------------------------------------------------------------------
-    #TEST LINES FOR ONE BOOK - TO BE DELETED OR DISABLED
-    #-------------------------------------------------------------------
-    #logger.info(f"product_page_url: {product_page_url}")
-    #logger.info(f"universal_product_code: {universal_product_code}")
-    #logger.info(f"title: {title}")
-    #logger.info(f"price_including_tax: {price_including_tax}")
-    #logger.info(f"price_excluding_tax: {price_excluding_tax}")
-    #logger.info(f"number_available: {number_available}")
-    #logger.info(f"product description: {product_description}")
-    #logger.info(f"category: {category}")
-    #logger.info(f"review_rating: {rating}")
-    #logger.info(f"image url: {image_url}")    
-    
-    #sys.exit()
-
 # ---------------------------------------------------------------
 # Function that retrieves all books from a category
 # and writes them to the csv file.
@@ -293,11 +277,6 @@ def extract_books_categorie(url_categ, image_dir):
 
     for book_url in book_urls:
         write_book_line(book_url, image_dir)
-
-    #-------------------------------------------------------------------
-    #TEST LINES FOR ONE CATEGORY - TO BE DELETED OR DISABLED
-    #-------------------------------------------------------------------
-    #sys.exit()
 
 # ---------------------------------------------------------------
 # Function that extract all categories
@@ -336,7 +315,6 @@ def extract_categories():
 # ---------------------------------------------------------------
 # main 
 # ---------------------------------------------------------------
-
 
 csv_path = "../data/output"  
 csv_path_file = "../data/output/wikibooks.csv"  
