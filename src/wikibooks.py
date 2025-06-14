@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------
-# scrapt_book.py
+# wikibooks.py
 #
 # App that extract books information from the web site: https://books.toscrape.com/index.html
 # ---------------------------------------------------------------------
@@ -33,6 +33,9 @@ def write_csv_header(csv_path,csv_path_file):
     IN: csv_path_file : Path to the csv file
     OUT: none
     """
+    print("csv_path: ",csv_path)
+    print("csv_path_file: ",csv_path_file)
+
     csv_header = [
         "product_page_url",
         "universal_product_code",
@@ -45,13 +48,6 @@ def write_csv_header(csv_path,csv_path_file):
         "review_rating",
         "image url"
         ]
-    # Create the directory in needed
-    try:
-        # creates all intermediate-level dirs if needed
-        os.makedirs(csv_path, exist_ok=True)  
-        print(f"Folder created or already exists: {csv_path}")
-    except Exception as e:
-        print(f"Error creating folder {csv_path}: {e}")
 
     # Write the header row       
     try:
@@ -59,7 +55,7 @@ def write_csv_header(csv_path,csv_path_file):
             writer = csv.writer(fichier_csv, delimiter=",")
             writer.writerow(csv_header)
     except IOError as e:
-        logger.info(f"Erreur writing csv header to {csv_path: {e}}")
+        logger.info(f"Erreur writing csv header to {csv_path_file: {e}}")
 
 # ---------------------------------------------------------------
 # Function that download the book image
@@ -100,7 +96,7 @@ def download_book_image(book_title, product_page_url, image_url, image_dir):
 # Function that writes a book row to the csv file
 # ---------------------------------------------------------------
 
-def write_book_line(product_page_url, image_dir):
+def write_book_line(product_page_url, image_dir, csv_path_file):
 
     # Request product_page_url; return None if the request fails
     if (response := make_requests(product_page_url)) is None:
@@ -252,7 +248,7 @@ def write_book_line(product_page_url, image_dir):
 # and writes them to the csv file.
 # ---------------------------------------------------------------
 
-def extract_books_categorie(url_categ, image_dir):
+def extract_books_categorie(url_categ, image_dir, csv_path_file):
 
     url_page_categ = url_categ
     more_categ_page = 1
@@ -281,7 +277,7 @@ def extract_books_categorie(url_categ, image_dir):
                 logger.warning(f"'a' tag with href not found in h3 on page: {url_categ}")
 
         for book_url in book_urls:
-            write_book_line(book_url, image_dir)
+            write_book_line(book_url, image_dir, csv_path_file)
 
         # check if there is a next page link for category pagination    
         next_page_found = soup.find("li", class_="next")
@@ -299,7 +295,7 @@ def extract_books_categorie(url_categ, image_dir):
 # and writes the books from each category to the csv file
 # ---------------------------------------------------------------
 
-def extract_categories():
+def extract_categories(url_index):
     url_index = "https://books.toscrape.com/index.html"
     response = requests.get(url_index)
     soup = BeautifulSoup(response.content, "html.parser")
@@ -317,28 +313,31 @@ def extract_categories():
         logger.info(f"=====> CATEGORY NAME: {category_name}")
         print(f"=====> CATEGORY NAME: {category_name}")
 
-        # Build local image directory path
-        image_dir = os.path.join("..","data", "output", "images", category_name)
+        # Build local cvs + images directory path
+        image_dir = os.path.join("..","data", "output", category_name)
         os.makedirs(image_dir, exist_ok=True)
+        csv_path = image_dir # csv file stored in the image category folder
+        csv_path_file = os.path.join(csv_path, f"{category_name}.csv")
+        print("csv_path: ",csv_path)
+        print("csv_path_file: ",csv_path_file)
+        write_csv_header(csv_path,csv_path_file)
 
         # Build full category URL
         url_categ = href["href"]
         full_url = urljoin(url_index, url_categ)
 
         # Scrape all books in category
-        extract_books_categorie(full_url, image_dir)
+        extract_books_categorie(full_url, image_dir, csv_path_file)
 
 # ---------------------------------------------------------------
 # main 
 # ---------------------------------------------------------------
 
-csv_path = "../data/output"  
-csv_path_file = "../data/output/wikibooks.csv"  
 
 def main():
     logger.info("========== >>>> Program started")
-    write_csv_header(csv_path,csv_path_file)
-    extract_categories()
+    url_index = "https://books.toscrape.com/index.html"
+    extract_categories(url_index)
     logger.info("<<<< =========== Program ended")
 
 if __name__ == "__main__":
