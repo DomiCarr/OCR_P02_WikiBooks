@@ -254,29 +254,48 @@ def write_book_line(product_page_url, image_dir):
 
 def extract_books_categorie(url_categ, image_dir):
 
-    # Request url_categ; return None if the request fails
-    if (response := make_requests(url_categ)) is None:
-        return
+    url_page_categ = url_categ
+    more_categ_page = 1
 
-    # Check if the HTTP response status is ok (200-299)
-    if not response.ok:
-        logger.warning(f"Request failed for category page: {url_categ} with status code {response.status_code}")
-        return  # Exit the function if the request failed
+    while more_categ_page:
 
-    soup = BeautifulSoup(response.content, "html.parser")
+        # Request url_categ; return None if the request fails
+        if (response := make_requests(url_page_categ)) is None:
+            return
 
-    book_urls = []
-    for h3 in soup.find_all("h3"):
-        href = h3.find("a")
-        if href and href.has_attr("href"):
-            href_url = href["href"]
-            full_url = urljoin(url_categ, href_url)
-            book_urls.append(full_url)
+        # Check if the HTTP response status is ok (200-299)
+        if not response.ok:
+            logger.warning(f"Request failed for category page: {url_page_categ} with status code {response.status_code}")
+            return  # Exit the function if the request failed
+    
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        book_urls = []
+        for h3 in soup.find_all("h3"):
+            href = h3.find("a")
+            if href and href.has_attr("href"):
+                href_url = href["href"]
+                full_url = urljoin(url_categ, href_url)
+                book_urls.append(full_url)
+            else:
+                logger.warning(f"'a' tag with href not found in h3 on page: {url_categ}")
+
+        for book_url in book_urls:
+            write_book_line(book_url, image_dir)
+
+        # we look if there are more categ pages:    
+        next_page_found = soup.find("li", class_="next")
+        print("next_page_found: ",next_page_found)
+        if next_page_found:
+            next_page_link = next_page_found.find("a")
+            print("next_page_link: ",next_page_link)
+            next_page_href = next_page_link["href"]
+            print("next_page_href :", next_page_href)
+            url_page_categ = urljoin(url_categ,next_page_href)
+            print("url_page_categ :", url_page_categ)
         else:
-            logger.warning(f"'a' tag with href not found in h3 on page: {url_categ}")
-
-    for book_url in book_urls:
-        write_book_line(book_url, image_dir)
+            print("Aucune page suivante.")
+            more_categ_page = 0
 
 # ---------------------------------------------------------------
 # Function that extract all categories
