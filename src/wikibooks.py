@@ -283,18 +283,15 @@ def extract_books_categorie(url_categ, image_dir):
         for book_url in book_urls:
             write_book_line(book_url, image_dir)
 
-        # we look if there are more categ pages:    
+        # check if there is a next page link for category pagination    
         next_page_found = soup.find("li", class_="next")
-        print("next_page_found: ",next_page_found)
         if next_page_found:
+            # Build the url of the next page
             next_page_link = next_page_found.find("a")
-            print("next_page_link: ",next_page_link)
             next_page_href = next_page_link["href"]
-            print("next_page_href :", next_page_href)
-            url_page_categ = urljoin(url_categ,next_page_href)
-            print("url_page_categ :", url_page_categ)
+            url_page_categ = urljoin(url_categ, next_page_href)
         else:
-            print("Aucune page suivante.")
+            # No next page found, stop pagination loop
             more_categ_page = 0
 
 # ---------------------------------------------------------------
