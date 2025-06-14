@@ -33,8 +33,6 @@ def write_csv_header(csv_path,csv_path_file):
     IN: csv_path_file : Path to the csv file
     OUT: none
     """
-    print("csv_path: ",csv_path)
-    print("csv_path_file: ",csv_path_file)
 
     csv_header = [
         "product_page_url",
@@ -318,8 +316,6 @@ def extract_categories(url_index):
         os.makedirs(image_dir, exist_ok=True)
         csv_path = image_dir # csv file stored in the image category folder
         csv_path_file = os.path.join(csv_path, f"{category_name}.csv")
-        print("csv_path: ",csv_path)
-        print("csv_path_file: ",csv_path_file)
         write_csv_header(csv_path,csv_path_file)
 
         # Build full category URL
